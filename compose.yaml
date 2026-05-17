@@ -1,0 +1,31 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - DATABASE_URL=sqlite+aiosqlite:///./data/observer.db
+    volumes:
+      - ./data/backend:/app/data
+    healthcheck:
+      test: ["CMD", "python", "server/healthcheck.py"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost || exit 1"]
+      interval: 60s
+      timeout: 30s
+      retries: 5

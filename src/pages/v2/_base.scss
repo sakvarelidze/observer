@@ -1,0 +1,168 @@
+// Shared design layer for v2 pages. Imported from each v2 component's
+// scoped <style> block; SCSS variables and mixins resolve at compile
+// time, keyframes are emitted into each importing component's scope.
+//
+// The goal is to make the next v2 page cheap to build: drop in the
+// shell tokens, the status-color tokens, the topbar mixin, the
+// pulse keyframes, and you're 80% of the way there visually.
+
+// -----------------------------------------------------------------
+// Easing — every v2 motion uses this curve. Snappy out, soft in.
+// -----------------------------------------------------------------
+$v2-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+// -----------------------------------------------------------------
+// Surface tokens. Apply on the page root so descendants can read
+// var(--bg), var(--text), etc. without duplicating values.
+// -----------------------------------------------------------------
+@mixin v2-surface-tokens {
+    --bg: hsl(0 0% 5%);
+    --bg-soft: hsl(0 0% 8%);
+    --bg-hover: hsl(0 0% 12%);
+    --border: hsl(0 0% 16%);
+    --border-strong: hsl(0 0% 26%);
+    --text: hsl(0 0% 96%);
+    --text-muted: hsl(0 0% 62%);
+    --text-faint: hsl(0 0% 42%);
+    --accent: hsl(142 71% 45%);
+    --enter-ease: #{$v2-ease};
+}
+
+// -----------------------------------------------------------------
+// Status tokens. Apply inside any selector that carries a
+// .status-up / .status-down / .status-pending / .status-maintenance /
+// .status-paused / .status-unknown modifier (or .paused).
+//
+// Sets --status (the solid color) and --status-glow (a translucent
+// halo color) so descendants stay agnostic of which status is active.
+// -----------------------------------------------------------------
+// $glow controls the alpha on --status-glow. Tiles + counter dots use
+// the bold default (0.55) for visible halos on small marks; the page
+// shell uses a softer value (~0.18) for an ambient background tint.
+@mixin v2-status-tokens($glow: 0.55) {
+    &.status-up {
+        --status: hsl(142 71% 45%);
+        --status-glow: hsl(142 71% 45% / #{$glow});
+    }
+    &.status-down {
+        --status: hsl(0 84% 60%);
+        --status-glow: hsl(0 84% 60% / #{$glow});
+    }
+    &.status-pending {
+        --status: hsl(38 92% 50%);
+        --status-glow: hsl(38 92% 50% / #{$glow});
+    }
+    &.status-maintenance {
+        --status: hsl(217 91% 60%);
+        --status-glow: hsl(217 91% 60% / #{$glow});
+    }
+    &.status-paused,
+    &.paused {
+        --status: hsl(0 0% 38%);
+        --status-glow: hsl(0 0% 38% / 0);
+    }
+    &.status-unknown {
+        --status: hsl(0 0% 38%);
+        --status-glow: hsl(0 0% 38% / 0);
+    }
+}
+
+// -----------------------------------------------------------------
+// Shell base — typography + min-height. Apply to the page root.
+// -----------------------------------------------------------------
+@mixin v2-shell-base {
+    min-height: 100vh;
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+        Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    letter-spacing: -0.005em;
+}
+
+// -----------------------------------------------------------------
+// Sticky topbar layout used by every v2 page. Three-column grid
+// (back/brand · center content · actions) with a fade-to-transparent
+// background that lets content scroll under it cleanly.
+// -----------------------------------------------------------------
+@mixin v2-sticky-topbar($gap: 16px) {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: $gap;
+    // Full-bleed trick: the topbar's box stretches to the viewport edges
+    // (so its background covers the parent's left/right padding gutter),
+    // while equal padding keeps the content aligned with the rest of the
+    // page. Works for any parent horizontal padding.
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding: 16px calc(50vw - 50%);
+    // Frosted-glass topbar: a soft tint plus backdrop blur picks up the
+    // ambient glow of the page beneath instead of cutting it off with a
+    // hard solid edge. The mask feathers the bottom so the blur itself
+    // also fades out, avoiding a visible blur boundary.
+    background: linear-gradient(to bottom, hsl(0 0% 5% / 0.82), hsl(0 0% 5% / 0));
+    backdrop-filter: blur(14px) saturate(120%);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+    mask-image: linear-gradient(to bottom, black 78%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, black 78%, transparent);
+}
+
+// -----------------------------------------------------------------
+// Pulse / motion keyframes. Imported once per component (they end up
+// scoped per component due to Vue's scoped CSS, so referencing them
+// by name from the same component's rules works).
+// -----------------------------------------------------------------
+@keyframes v2-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes v2-up {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes v2-down {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes v2-rise {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.985);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes v2-status-pulse {
+    0% { box-shadow: 0 0 0 0 var(--status); }
+    100% { box-shadow: 0 0 0 14px hsl(0 0% 0% / 0); }
+}
+
+@keyframes v2-status-ring {
+    0%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-1px); }
+}
+
+@keyframes v2-loader-bar {
+    0%, 100% { transform: scaleY(0.5); opacity: 0.5; }
+    50% { transform: scaleY(1); opacity: 1; }
+}

@@ -1,0 +1,9 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "esModuleInterop": true
+    },
+    "files": [
+        "./src/util.ts"
+    ]
+}
