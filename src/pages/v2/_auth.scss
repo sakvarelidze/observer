@@ -3,7 +3,7 @@
 // _base.scss as well — _auth.scss only adds the centered-card
 // shell on top of the v2 surface tokens.
 
-@import "./_base.scss";
+@use "./_base" as *;
 
 @mixin v2-auth-shell {
     @include v2-surface-tokens;

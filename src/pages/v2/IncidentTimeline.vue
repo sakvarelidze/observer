@@ -228,7 +228,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "./_base.scss";
+@use "./_base" as *;
 
 .incident-timeline {
     @include v2-surface-tokens;

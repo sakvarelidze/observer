@@ -271,6 +271,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "./_base.scss";
-@import "./charts/_card.scss";
+@use "./_base" as *;
+@use "./charts/_card" as *;
 </style>

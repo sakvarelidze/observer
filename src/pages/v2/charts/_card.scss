@@ -2,6 +2,8 @@
 // Each chart imports both `_base.scss` (for surface tokens) and this
 // file inside its scoped <style> block.
 
+@use "../_base" as *;
+
 .v2-chart-card {
     @include v2-surface-tokens;
 
