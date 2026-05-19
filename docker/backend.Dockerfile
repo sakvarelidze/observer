@@ -27,17 +27,24 @@ RUN find "$VIRTUAL_ENV" -type d -name '__pycache__' -prune -exec rm -rf '{}' + \
 
 FROM gcr.io/distroless/python3-debian12 AS runtime
 
+# Don't carry the venv's /opt/venv/bin shims into the runtime — those are
+# symlinks back to python:3.11-slim's /usr/local/bin/python3.11 path, which
+# doesn't exist in distroless (it ships /usr/bin/python3.11). PYTHONPATH
+# lets distroless's own interpreter pick up the installed site-packages
+# directly, no venv reactivation required.
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    VIRTUAL_ENV=/opt/venv \
-    PATH="/opt/venv/bin:$PATH"
+    PYTHONPATH=/opt/venv/lib/python3.11/site-packages
 
 WORKDIR /app
 
-COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder /opt/venv/lib/python3.11/site-packages /opt/venv/lib/python3.11/site-packages
 COPY server/ ./server
 COPY server/healthcheck.py ./extra/healthcheck.py
 
 EXPOSE 3001
-HEALTHCHECK --interval=60s --timeout=30s --retries=5 CMD ["python", "extra/healthcheck.py"]
-CMD ["python", "-m", "server.server"]
+# Distroless's default ENTRYPOINT is /usr/bin/python3.11, so CMD provides
+# the interpreter args. HEALTHCHECK's CMD bypasses ENTRYPOINT, so the
+# interpreter has to be named explicitly.
+HEALTHCHECK --interval=60s --timeout=30s --retries=5 CMD ["/usr/bin/python3.11", "extra/healthcheck.py"]
+CMD ["-m", "server.server"]
