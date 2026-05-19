@@ -487,7 +487,7 @@ function safeParseJson(raw) {
 </script>
 
 <style lang="scss" scoped>
-@import "./_base.scss";
+@use "./_base" as *;
 
 .v2-edit {
     @include v2-surface-tokens;

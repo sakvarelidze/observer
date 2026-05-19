@@ -1,4 +1,5 @@
-@import "vars.scss";
+@use "vars" as *;
+@use "localization";
 
 // Global background — every v2 page sets its own background, but the
 // html/body fallback prevents flashes of unstyled white during initial
@@ -54,5 +55,4 @@ body {
     background: transparent;
 }
 
-// Localization (Farsi font override etc.)
-@import "localization.scss";
+// Localization (Farsi font override etc.) — see @use at top of file.

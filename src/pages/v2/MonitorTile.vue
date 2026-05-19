@@ -160,7 +160,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "./_base.scss";
+@use "./_base" as *;
 
 .tile {
     @include v2-status-tokens;

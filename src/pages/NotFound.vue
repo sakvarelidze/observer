@@ -40,7 +40,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "./v2/_auth.scss";
+@use "./v2/_auth" as *;
 
 .v2-not-found { @include v2-auth-shell; }
 .v2-auth-card { @include v2-auth-card; }

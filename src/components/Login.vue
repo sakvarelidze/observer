@@ -168,7 +168,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "../pages/v2/_auth.scss";
+@use "../pages/v2/_auth" as *;
 
 .v2-login { @include v2-auth-shell; }
 .v2-auth-card { @include v2-auth-card; }

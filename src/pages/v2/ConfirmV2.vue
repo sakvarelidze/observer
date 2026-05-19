@@ -186,7 +186,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "./_base.scss";
+@use "./_base" as *;
 
 .confirm-overlay {
     position: fixed;

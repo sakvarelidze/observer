@@ -382,7 +382,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "../_base.scss";
+@use "../_base" as *;
 
 .settings-page {
     @include v2-surface-tokens;
