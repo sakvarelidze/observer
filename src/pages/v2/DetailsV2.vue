@@ -415,6 +415,7 @@ export default {
                     this.loadRecentEvents();
                     this.ensureCoverage();
                     this.fetchTLSSummary();
+                    this.fetchUptime();
                 }
             },
         },
@@ -480,6 +481,30 @@ export default {
                 return u.toString();
             } catch (e) {
                 return s.replace(/Password=([^;]+);/ig, "Password=******;");
+            }
+        },
+        async fetchUptime() {
+            // The dashboard poll only carries the 24h window (computing
+            // 30d/1y for every monitor on every poll was the source of the
+            // slow loads). Fetch the longer windows for just this monitor
+            // on demand and merge them into the shared uptimeList.
+            const m = this.monitor;
+            if (!m || !Number.isInteger(m.id)) {
+                return;
+            }
+            try {
+                const { data } = await this.$root.api.get(
+                    `/monitors/${m.id}/uptime`,
+                    { params: { windows: "24,720,1y" } },
+                );
+                if (data?.ok && data.uptimeList) {
+                    this.$root.uptimeList = {
+                        ...this.$root.uptimeList,
+                        ...data.uptimeList,
+                    };
+                }
+            } catch (e) {
+                console.warn("Failed to load monitor uptime", e);
             }
         },
         async loadRecentEvents() {

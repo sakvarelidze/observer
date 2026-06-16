@@ -669,7 +669,10 @@ def test_push_and_heartbeat(client):
     client.post("/api/monitors", json=monitor)
     client.post("/api/status-page", json={"title": "Main", "slug": "default"})
 
-    # Initial fetch should return the single placeholder heartbeat with a pending status
+    # Initial fetch should return the single placeholder heartbeat with a
+    # pending status. Push monitors are passive — the create-time probe
+    # (_run_single_check) must skip them; otherwise it falls through to the
+    # HTTPMonitor default and races a bogus "HTTP 200" beat in here.
     res = client.get("/api/status-page/heartbeat/default")
     assert res.status_code == 200
     data = res.json()
@@ -688,7 +691,32 @@ def test_push_and_heartbeat(client):
     assert beats and len(beats) == 2 and beats[1]["status"] == 1
 
 
-def test_settings_roundtrip(client):
+def test_push_monitor_not_actively_probed_on_create(client):
+    """Regression: creating a push monitor must not trigger an outbound
+    probe. Previously _run_single_check fell through to HTTPMonitor and
+    wrote a spurious heartbeat (racing test_push_and_heartbeat). Give the
+    create-time background task room to run, then assert the only beat is
+    the pending placeholder."""
+    res = client.post(
+        "/api/monitors",
+        json={
+            "id": 1,
+            "name": "PushOnly",
+            "url": "http://example.com",
+            "push_token": "tok",
+            "type": "push",
+        },
+    )
+    assert res.json()["ok"] is True
+
+    # Poll a few times so any erroneously-scheduled probe task has had the
+    # event loop time to complete; the count must stay at the single
+    # pending placeholder.
+    for _ in range(5):
+        res = client.get("/api/monitors/1/heartbeats", params={"limit": 50})
+        beats = res.json()["data"]
+        assert len(beats) == 1
+        assert beats[0]["status"] == 2  # pending placeholder, no HTTP probe
     res = client.get("/api/settings")
     assert res.status_code == 200
     assert res.json() == {"data": {"setup_done": True}}
@@ -1529,6 +1557,81 @@ def test_status_page_maintenance_excluded_from_uptime(client):
     res = client.get("/api/status-page/heartbeat/test")
     uptime = res.json()["uptimeList"][f"{monitor_id}_24"]
     assert uptime == pytest.approx(5 / 6 * 100, abs=0.01)
+
+
+def test_status_page_heartbeat_uptime_windows_param(client):
+    """The dashboard requests only the 24h window to avoid the expensive
+    30d / 1y full-table scans on every poll. `uptime_windows=24` must
+    return the 24h key and omit the others."""
+    from server.db import database, models
+
+    res = client.post(
+        "/api/monitors",
+        json={"id": 1, "name": "m", "url": "http://example.com"},
+    )
+    monitor_id = res.json()["monitorID"]
+
+    async def setup():
+        async with database.async_session_maker() as s:
+            await s.execute(
+                delete(models.Heartbeat).where(models.Heartbeat.monitor_id == monitor_id)
+            )
+            now = datetime.datetime.utcnow()
+            s.add(models.Heartbeat(
+                monitor_id=monitor_id,
+                status=1,
+                time=now - datetime.timedelta(hours=1),
+            ))
+            await s.commit()
+
+    asyncio.run(setup())
+
+    res = client.get("/api/status-page/heartbeat/test", params={"uptime_windows": "24"})
+    uptime_list = res.json()["uptimeList"]
+    assert uptime_list[f"{monitor_id}_24"] == 100.0
+    assert f"{monitor_id}_720" not in uptime_list
+    assert f"{monitor_id}_1y" not in uptime_list
+
+
+def test_monitor_uptime_endpoint_per_window(client):
+    """The per-monitor uptime endpoint backs the detail page's 30d / 1y
+    figures. 1 up + 1 down in the last day → 50% across every window."""
+    from server.db import database, models
+
+    res = client.post(
+        "/api/monitors",
+        json={"id": 1, "name": "m", "url": "http://example.com"},
+    )
+    monitor_id = res.json()["monitorID"]
+
+    async def setup():
+        async with database.async_session_maker() as s:
+            await s.execute(
+                delete(models.Heartbeat).where(models.Heartbeat.monitor_id == monitor_id)
+            )
+            now = datetime.datetime.utcnow()
+            s.add_all([
+                models.Heartbeat(
+                    monitor_id=monitor_id,
+                    status=1,
+                    time=now - datetime.timedelta(hours=2),
+                ),
+                models.Heartbeat(
+                    monitor_id=monitor_id,
+                    status=0,
+                    time=now - datetime.timedelta(hours=1),
+                ),
+            ])
+            await s.commit()
+
+    asyncio.run(setup())
+
+    res = client.get(f"/api/monitors/{monitor_id}/uptime")
+    assert res.status_code == 200
+    uptime_list = res.json()["uptimeList"]
+    assert uptime_list[f"{monitor_id}_24"] == 50.0
+    assert uptime_list[f"{monitor_id}_720"] == 50.0
+    assert uptime_list[f"{monitor_id}_1y"] == 50.0
 
 
 def test_trust_presented_ca_accepts_leaf_certificate(monkeypatch, client):

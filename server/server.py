@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from server.routers import api
 from server.db import init_db, models, database
 from server.monitor_types.http import HTTPMonitor
-from server.monitor_types import monitor_types
+from server.monitor_types import monitor_types, is_actively_probed
 from server.notification_providers import get_provider
 from sqlalchemy import and_, delete, func, select, text
 from sqlalchemy.orm import selectinload
@@ -529,6 +529,12 @@ def create_app() -> FastAPI:
             )
 
             for m in monitors:
+                # Passive monitors (push) deliver their own heartbeats via
+                # the /push endpoint — actively probing them here would
+                # fall through to the HTTPMonitor default and clobber the
+                # pushed status with a spurious HTTP result every tick.
+                if not is_actively_probed(m.type):
+                    continue
                 interval = max(
                     int(getattr(m, "interval", DEFAULT_INTERVAL_SECONDS) or DEFAULT_INTERVAL_SECONDS),
                     MIN_INTERVAL_SECONDS,

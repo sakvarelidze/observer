@@ -12,6 +12,10 @@ services:
       - ./data/backend:/app/data
     healthcheck:
       test: ["CMD", "/usr/bin/python3.11", "server/healthcheck.py"]
+      # start_period gives the backend room to boot before failed probes
+      # count toward `retries`; start_interval (Docker 25+) probes
+      # rapidly during that window so `depends_on.condition: service_healthy`
+      # releases the frontend in seconds, not minutes.
       interval: 30s
       timeout: 10s
       retries: 5
