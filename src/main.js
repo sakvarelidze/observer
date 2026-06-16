@@ -274,25 +274,28 @@ const app = createApp({
                     }
                 }
 
-                try {
-                    this.notificationList = await this.getNotifications();
-                } catch (e) {
-                    console.warn("Cannot load notifications", e);
-                }
-
-                await this.loadStatusPages();
-                await this.loadMaintenances();
-                await this.loadAPIKeys();
-
-                // Try to fetch heartbeat data using the default status page.
-                // Cold start: no `since` so we get the full window per
-                // monitor; subsequent refreshes will use delta polling.
-                try {
-                    this._hbSince = null;
-                    await this.loadHeartbeatData();
-                } catch (e) {
-                    console.warn("Cannot load heartbeat data", e);
-                }
+                // Heartbeats fill the tiles with live status, so kick that
+                // off first and let the secondary data (notifications,
+                // status pages, maintenances, API keys) load concurrently
+                // rather than blocking the dashboard behind four unrelated
+                // round-trips. Cold start: no `since` so we get the full
+                // window per monitor; later refreshes use delta polling.
+                this._hbSince = null;
+                await Promise.allSettled([
+                    this.loadHeartbeatData().catch((e) => {
+                        console.warn("Cannot load heartbeat data", e);
+                    }),
+                    this.getNotifications()
+                        .then((list) => {
+                            this.notificationList = list;
+                        })
+                        .catch((e) => {
+                            console.warn("Cannot load notifications", e);
+                        }),
+                    this.loadStatusPages(),
+                    this.loadMaintenances(),
+                    this.loadAPIKeys(),
+                ]);
             } catch (e) {
                 console.error("Failed to load monitors", e);
             }
@@ -416,7 +419,14 @@ const app = createApp({
             this.heartbeatList = mergedHeartbeatList;
             this.lastHeartbeatList = newLast;
             this.dashboardHeartbeatList = newDashboard;
-            this.uptimeList = data.uptimeList || {};
+            // Merge rather than replace: the dashboard poll only carries the
+            // 24h window, but the detail page populates 30d/1y keys for the
+            // monitor being viewed. A blind replace would wipe those every
+            // 10s and make the detail-page pills flicker to "—".
+            this.uptimeList = {
+                ...this.uptimeList,
+                ...(data.uptimeList || {}),
+            };
 
             if (maxTimeIso) {
                 const ts = dayjs.utc(maxTimeIso).valueOf() / 1000;
@@ -429,7 +439,15 @@ const app = createApp({
         },
 
         async loadHeartbeatData({ notify = false, since = null } = {}) {
-            const params = { limit: DASHBOARD_HEARTBEAT_LIMIT };
+            // The dashboard only renders the 24h uptime figure, so only ask
+            // the server for that window. The 30d / 1y windows are fetched
+            // per-monitor by the detail page; computing them for every
+            // monitor on every poll meant a year-long heartbeat scan on the
+            // server every few seconds.
+            const params = {
+                limit: DASHBOARD_HEARTBEAT_LIMIT,
+                uptime_windows: "24",
+            };
             if (since != null) {
                 // Re-include the boundary beat; processHeartbeatPayload
                 // dedupes via the `time > latestTime` filter.

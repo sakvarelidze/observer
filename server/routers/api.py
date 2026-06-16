@@ -31,7 +31,7 @@ from urllib.parse import urlparse
 from ..db import models, database
 from ..notification_providers import get_provider
 from ..settings import DEFAULT_INTERVAL_SECONDS, MIN_INTERVAL_SECONDS
-from ..monitor_types import monitor_types, HTTPMonitor
+from ..monitor_types import monitor_types, HTTPMonitor, is_actively_probed
 from ..tls import fetch_presented_chain, is_ca
 from ..cloudflared import CloudflaredManager
 
@@ -1134,6 +1134,13 @@ async def _run_single_check(monitor_id: int):
         m = res.scalar_one_or_none()
         if not m:
             return
+        # Passive monitors (push) are never actively probed — their first
+        # real heartbeat arrives when the external caller posts to /push.
+        # Probing here would fall through to the HTTPMonitor default and
+        # bury the freshly-created "Pending" placeholder under a bogus
+        # HTTP beat.
+        if not is_actively_probed(getattr(m, "type", "http")):
+            return
         hb = models.Heartbeat(monitor_id=m.id)
         monitor_cls = monitor_types.get(getattr(m, "type", "http"), HTTPMonitor)
         try:
@@ -1840,6 +1847,54 @@ async def uptime_daily(
     }
 
     return {"ok": True, "buckets": buckets, "summary": summary}
+
+
+_UPTIME_WINDOW_DELTAS = {
+    "24": datetime.timedelta(hours=24),
+    "720": datetime.timedelta(days=30),
+    "1y": datetime.timedelta(days=365),
+}
+
+
+@router.get("/monitors/{monitor_id}/uptime")
+async def monitor_uptime(
+    monitor_id: int,
+    windows: str = "24,720,1y",
+    session: AsyncSession = Depends(get_session),
+):
+    """Rolling uptime percentage for a single monitor over the requested
+    windows (24h / 30d / 1y).
+
+    Split out from the dashboard heartbeat poll: opening one monitor's
+    detail page used to rely on the dashboard recomputing 30d/1y uptime
+    for *every* monitor on every poll, which meant a year-long scan across
+    the whole heartbeat table every 10s. This computes only the one
+    monitor the user is looking at, on demand. Keys mirror the dashboard's
+    `<id>_<window>` convention so the frontend merges them straight into
+    the shared uptimeList. Up (1) and down (0) beats form the denominator;
+    pending (2) / maintenance (3) are excluded, matching the dashboard.
+    """
+    now = datetime.datetime.utcnow()
+    requested = [w.strip() for w in windows.split(",") if w.strip()]
+    out: Dict[str, float] = {}
+    for key in requested:
+        delta = _UPTIME_WINDOW_DELTAS.get(key)
+        if delta is None:
+            continue
+        res = await session.execute(
+            select(
+                func.sum(case((models.Heartbeat.status == 1, 1), else_=0)),
+                func.sum(case((models.Heartbeat.status.in_([0, 1]), 1), else_=0)),
+            )
+            .where(models.Heartbeat.monitor_id == monitor_id)
+            .where(models.Heartbeat.time >= now - delta)
+        )
+        up_count, reckonable = res.one()
+        up_count = int(up_count or 0)
+        reckonable = int(reckonable or 0)
+        if reckonable > 0:
+            out[f"{monitor_id}_{key}"] = round(up_count / reckonable * 100, 4)
+    return {"ok": True, "uptimeList": out}
 
 
 _BADGE_PERIOD_HOURS = {
@@ -3034,6 +3089,7 @@ async def get_status_page_heartbeat(
     session: AsyncSession = Depends(get_session),
     limit: int = 100,
     since: float | None = None,
+    uptime_windows: str = "24,720,1y",
 ):
     now = datetime.datetime.utcnow()
 
@@ -3075,12 +3131,21 @@ async def get_status_page_heartbeat(
     # forever sit at 99.x% (the pending sample stays in the 24h window
     # for a day) and a planned maintenance window would drag the score
     # down even though the user marked it as expected.
+    #
+    # Only the requested windows are computed. The authenticated dashboard
+    # renders just the 24h figure, so it asks for `uptime_windows=24` and
+    # we skip the far more expensive 30d / 1y full-window scans — those are
+    # fetched per-monitor by the detail page (their only consumer) instead
+    # of being recomputed for every monitor on every 10s poll. Public
+    # status pages keep requesting all three via the default.
     uptime_list: Dict[str, float] = {}
-    durations = {
+    all_durations = {
         "24": datetime.timedelta(hours=24),
         "720": datetime.timedelta(days=30),
         "1y": datetime.timedelta(days=365),
     }
+    requested = [w.strip() for w in uptime_windows.split(",") if w.strip()]
+    durations = {k: all_durations[k] for k in requested if k in all_durations}
     for key, delta in durations.items():
         period_start = now - delta
         stmt = (
