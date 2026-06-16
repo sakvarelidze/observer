@@ -1025,6 +1025,17 @@ async def get_monitors(session: AsyncSession = Depends(get_session)):
     for m in monitors:
         data = MonitorSchema.from_orm_clean(m)
         data.pop("maxretries", None)
+        # Strip write-capable secrets from the bulk list. The dashboard and
+        # tiles never use these, and this endpoint is reachable by
+        # read-scoped API keys; leaking them lets a read principal forge
+        # push beats or recover basic-auth / header credentials. The editor
+        # fetches them per-monitor via GET /monitor/{id}.
+        for secret in (
+            "basic_auth_pass", "basicAuthPass",
+            "push_token", "pushToken",
+            "headers",
+        ):
+            data.pop(secret, None)
         data["notificationIDList"] = notif_map.get(m.id, [])
         result_list.append({**data, "tags": tag_map.get(m.id, [])})
     return result_list
@@ -1032,7 +1043,6 @@ async def get_monitors(session: AsyncSession = Depends(get_session)):
 
 @router.post("/monitors")
 async def add_monitor(m: MonitorSchema, session: AsyncSession = Depends(get_session)):
-    print("add_monitor request", m.model_dump())
     interval = m.interval
     if interval is None or int(interval) < MIN_INTERVAL_SECONDS:
         interval = DEFAULT_INTERVAL_SECONDS
@@ -1210,7 +1220,6 @@ async def get_monitor(monitor_id: int, session: AsyncSession = Depends(get_sessi
 async def edit_monitor(
     monitor_id: int, m: MonitorSchema, session: AsyncSession = Depends(get_session)
 ):
-    print("edit_monitor request", m.model_dump())
     res = await session.execute(
         select(models.Monitor).where(models.Monitor.id == monitor_id)
     )
@@ -2048,11 +2057,20 @@ async def push_heartbeat(
     return {"ok": True}
 
 
+# Setting keys that hold credentials and must never be returned by the
+# read-all settings endpoint. cloudflared_token is the Cloudflare Tunnel
+# token (a write-capable credential); it is managed through the dedicated
+# /reverse-proxy/cloudflared endpoints, never read back from here.
+SECRET_SETTING_KEYS = {"cloudflared_token"}
+
+
 @router.get("/settings")
 async def get_settings(session: AsyncSession = Depends(get_session)):
     result = await session.execute(select(models.Setting))
     settings = {}
     for s in result.scalars().all():
+        if s.key in SECRET_SETTING_KEYS:
+            continue
         try:
             settings[s.key] = json.loads(s.value)
         except Exception:
@@ -2421,7 +2439,12 @@ async def setup_database_test(payload: DatabaseSetupRequest):
     try:
         await _try_connect(url)
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"connectionFailed: {exc}")
+        # Don't echo the raw exception to the client: it can include the
+        # supplied connection string (with password) and reveals internal
+        # host/port reachability to an unauthenticated caller. Log the
+        # detail server-side; return a generic failure.
+        logging.warning("setup-database/test connection failed: %r", exc)
+        raise HTTPException(status_code=400, detail="connectionFailed")
     return {"ok": True}
 
 
@@ -3083,22 +3106,105 @@ async def delete_status_page(slug: str, session: AsyncSession = Depends(get_sess
     return {"ok": True}
 
 
+def _status_page_monitor_ids(page) -> List[int]:
+    """Monitor IDs published by a status page, read from its JSON config
+    (publicGroupList[*].monitorList[*].id)."""
+    try:
+        cfg = json.loads(page.config) if page.config else {}
+    except Exception:
+        cfg = {}
+    ids: List[int] = []
+    for group in cfg.get("publicGroupList", []) or []:
+        for m in group.get("monitorList", []) or []:
+            mid = m.get("id") if isinstance(m, dict) else None
+            if mid is None:
+                continue
+            try:
+                ids.append(int(mid))
+            except (TypeError, ValueError):
+                pass
+    return ids
+
+
+async def _request_is_authenticated(request: Request, session: AsyncSession) -> bool:
+    """True when the caller presents a valid session JWT or API key. Used to
+    decide whether a status-page request is a privileged dashboard poll (all
+    monitors, full detail) or an anonymous public-page view (scoped to the
+    page's monitors, with probe messages redacted)."""
+    auth = request.headers.get("Authorization")
+    if auth and auth.startswith("Bearer "):
+        try:
+            jwt.decode(auth[7:], JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            return True
+        except jwt.PyJWTError:
+            return False
+    api_key = request.headers.get("X-API-Key")
+    if api_key:
+        try:
+            await verify_api_key(api_key, session, "read")
+            return True
+        except HTTPException:
+            return False
+    return False
+
+
+# Cache for the uptime aggregates. The 30d / 1y windows each scan up to a
+# year of heartbeats and dominate this endpoint's latency (~seconds), yet
+# the result barely changes minute-to-minute, and public pages poll every
+# 30s with potentially many concurrent viewers. Cache per (window, monitor
+# set) with a short TTL so only the first request in a window pays the
+# scan. Process-local; under multiple workers each simply warms its own.
+_uptime_cache: Dict = {}
+_UPTIME_CACHE_TTL = {"24": 30.0, "720": 300.0, "1y": 300.0}
+
+
+def _uptime_cache_get(window_key: str, monitor_ids: tuple):
+    entry = _uptime_cache.get((window_key, monitor_ids))
+    if not entry:
+        return None
+    ts, value = entry
+    if (time.time() - ts) < _UPTIME_CACHE_TTL.get(window_key, 60.0):
+        return value
+    return None
+
+
+def _uptime_cache_put(window_key: str, monitor_ids: tuple, value: dict):
+    _uptime_cache[(window_key, monitor_ids)] = (time.time(), value)
+
+
 @router.get("/status-page/heartbeat/{slug}")
 async def get_status_page_heartbeat(
     slug: str,
+    request: Request,
     session: AsyncSession = Depends(get_session),
     limit: int = 100,
     since: float | None = None,
     uptime_windows: str = "24,720,1y",
+    beats: bool = True,
 ):
     now = datetime.datetime.utcnow()
 
-    res = await session.execute(select(models.Monitor.id, models.Monitor.interval))
-    monitor_rows = res.mappings().all()
-    monitor_ids: List[int] = []
-    for row in monitor_rows:
-        monitor_id = int(row["id"])
-        monitor_ids.append(monitor_id)
+    # The authenticated dashboard needs every monitor with full detail. An
+    # anonymous public-status-page view must only ever see the monitors that
+    # page publishes, and must NOT receive raw probe messages — `msg` can
+    # carry internal URLs/IPs and backend error strings. The auth check
+    # below selects which behavior applies.
+    authed = await _request_is_authenticated(request, session)
+    if authed:
+        res = await session.execute(
+            select(models.Monitor.id, models.Monitor.interval)
+        )
+        monitor_ids: List[int] = [int(row["id"]) for row in res.mappings().all()]
+        redact = False
+    else:
+        res = await session.execute(
+            select(models.StatusPage).where(models.StatusPage.slug == slug)
+        )
+        page = res.scalar_one_or_none()
+        if not page or not getattr(page, "public", True):
+            return {"heartbeatList": {}, "uptimeList": {}}
+        monitor_ids = _status_page_monitor_ids(page)
+        redact = True
 
     if not monitor_ids:
         return {"heartbeatList": {}, "uptimeList": {}}
@@ -3110,16 +3216,23 @@ async def get_status_page_heartbeat(
     if since is not None:
         since_dt = datetime.datetime.utcfromtimestamp(since)
 
+    # `beats=false` lets a caller fetch only the uptime figures (used by the
+    # public page to load the slow 30d/1y windows in the background without
+    # re-transferring the full heartbeat payload).
     heartbeat_list: Dict[int, list] = {}
-    for mid in monitor_ids:
-        stmt = select(models.Heartbeat).where(models.Heartbeat.monitor_id == mid)
-        if since_dt is not None:
-            stmt = stmt.where(models.Heartbeat.time >= since_dt)
-        stmt = stmt.order_by(models.Heartbeat.time.desc()).limit(limit)
-        res = await session.execute(stmt)
-        beats = list(reversed(res.scalars().all()))
-        if beats:
-            heartbeat_list[mid] = [hb.to_json() for hb in beats]
+    if beats:
+        for mid in monitor_ids:
+            stmt = select(models.Heartbeat).where(models.Heartbeat.monitor_id == mid)
+            if since_dt is not None:
+                stmt = stmt.where(models.Heartbeat.time >= since_dt)
+            stmt = stmt.order_by(models.Heartbeat.time.desc()).limit(limit)
+            res = await session.execute(stmt)
+            mbeats = list(reversed(res.scalars().all()))
+            if mbeats:
+                heartbeat_list[mid] = [
+                    (hb.to_public_json() if redact else hb.to_json())
+                    for hb in mbeats
+                ]
 
     # Calculate uptime using SQL aggregates — one query per period.
     # This avoids loading every historical heartbeat into Python memory.
@@ -3146,7 +3259,12 @@ async def get_status_page_heartbeat(
     }
     requested = [w.strip() for w in uptime_windows.split(",") if w.strip()]
     durations = {k: all_durations[k] for k in requested if k in all_durations}
+    monitor_ids_key = tuple(sorted(monitor_ids))
     for key, delta in durations.items():
+        cached = _uptime_cache_get(key, monitor_ids_key)
+        if cached is not None:
+            uptime_list.update(cached)
+            continue
         period_start = now - delta
         stmt = (
             select(
@@ -3164,12 +3282,15 @@ async def get_status_page_heartbeat(
             .group_by(models.Heartbeat.monitor_id)
         )
         res = await session.execute(stmt)
+        window_result: Dict[str, float] = {}
         for row in res.mappings():
             mid = int(row["monitor_id"])
             up_count = int(row["up_count"] or 0)
             reckonable = int(row["reckonable"] or 0)
             if reckonable > 0:
-                uptime_list[f"{mid}_{key}"] = round(up_count / reckonable * 100, 4)
+                window_result[f"{mid}_{key}"] = round(up_count / reckonable * 100, 4)
+        _uptime_cache_put(key, monitor_ids_key, window_result)
+        uptime_list.update(window_result)
 
     return {"heartbeatList": heartbeat_list, "uptimeList": uptime_list}
 
