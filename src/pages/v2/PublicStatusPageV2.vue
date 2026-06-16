@@ -292,14 +292,43 @@ export default {
         },
         async fetchHeartbeats() {
             try {
+                // Phase 1: heartbeats + the cheap 24h window. This renders the
+                // bars and the operational status immediately (~0.1s). The
+                // 30d/1y windows each scan up to a year of history (~seconds),
+                // so we don't block the page on them.
                 const { data } = await this.$root.api.get(`/status-page/heartbeat/${this.slug}`, {
-                    params: { limit: 90 },
+                    params: {
+                        limit: 90,
+                        uptime_windows: "24",
+                    },
                 });
                 this.heartbeatList = data?.heartbeatList || {};
-                this.uptimeList = data?.uptimeList || {};
+                this.uptimeList = {
+                    ...this.uptimeList,
+                    ...(data?.uptimeList || {}),
+                };
                 this.lastUpdated = new Date();
             } catch (e) {
                 console.warn("could not load heartbeats", e);
+            }
+
+            // Phase 2: the slow 30d/1y windows, in the background. `beats=false`
+            // skips re-sending the heartbeat payload; results merge into the
+            // uptime pills when they arrive (and are server-side cached, so
+            // subsequent polls are instant).
+            try {
+                const { data } = await this.$root.api.get(`/status-page/heartbeat/${this.slug}`, {
+                    params: {
+                        uptime_windows: "720,1y",
+                        beats: false,
+                    },
+                });
+                this.uptimeList = {
+                    ...this.uptimeList,
+                    ...(data?.uptimeList || {}),
+                };
+            } catch (e) {
+                console.warn("could not load long-window uptime", e);
             }
         },
         beatsOf(monitorId) {

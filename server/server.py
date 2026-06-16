@@ -362,13 +362,24 @@ def create_app() -> FastAPI:
         "/api/entry-page",
         "/api/setup-database-info",
         "/api/setup-database",
-        "/api/setup-database/test",
     }
+    # /setup-database/test opens a connection to an arbitrary, caller-supplied
+    # host to validate credentials. That's only appropriate during first-run
+    # bootstrap (before any auth can exist); once a database is configured it
+    # would be an unauthenticated SSRF / internal port probe, so outside
+    # bootstrap it requires authentication like any other endpoint.
+    BOOTSTRAP_ONLY_PATHS = {"/api/setup-database/test"}
     # Path-prefix exemptions (badges live under /api/badges/<id>.svg).
     PUBLIC_PATH_PREFIXES = ("/api/badges/",)
 
     def _is_public_path(path: str) -> bool:
-        return path in PUBLIC_PATHS or path.startswith(PUBLIC_PATH_PREFIXES)
+        if path in PUBLIC_PATHS or path.startswith(PUBLIC_PATH_PREFIXES):
+            return True
+        if path in BOOTSTRAP_ONLY_PATHS and getattr(
+            app.state, "needs_db_setup", False
+        ):
+            return True
+        return False
 
     needs_setup: bool | None = None
 

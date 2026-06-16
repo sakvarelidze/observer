@@ -902,6 +902,93 @@ def test_status_page_public_access(client, anon_client):
     assert res.status_code == 403
 
 
+def test_status_page_heartbeat_anonymous_is_scoped_and_redacted(client, anon_client):
+    """Security regression: anonymous access to a public status page's
+    heartbeats must expose ONLY that page's monitors and must blank the
+    probe message (it can leak internal hosts/errors). The authenticated
+    dashboard still receives every monitor with full detail."""
+    from server.db import database, models
+
+    client.post("/api/monitors", json={"id": 1, "name": "pub-mon", "url": "http://a"})
+    client.post("/api/monitors", json={"id": 2, "name": "priv-mon", "url": "http://b"})
+    client.post(
+        "/api/status-page",
+        json={"title": "Pub", "slug": "pub", "public": True, "monitors": ["pub-mon"]},
+    )
+
+    async def setup():
+        async with database.async_session_maker() as s:
+            now = datetime.datetime.utcnow()
+            s.add_all([
+                models.Heartbeat(
+                    monitor_id=1, status=1, msg="secret-internal-host:5432", time=now
+                ),
+                models.Heartbeat(
+                    monitor_id=2, status=1, msg="other-secret-host", time=now
+                ),
+            ])
+            await s.commit()
+
+    asyncio.run(setup())
+
+    # Anonymous: scoped to the page's monitors (m1 only), msg redacted.
+    res = anon_client.get("/api/status-page/heartbeat/pub")
+    assert res.status_code == 200
+    hb = res.json()["heartbeatList"]
+    assert "1" in hb and "2" not in hb
+    assert hb["1"] and all(b["msg"] == "" for b in hb["1"])
+
+    # Authenticated dashboard: every monitor, full message preserved.
+    res = client.get("/api/status-page/heartbeat/pub")
+    hb = res.json()["heartbeatList"]
+    assert "1" in hb and "2" in hb
+    assert any("secret-internal-host" in b["msg"] for b in hb["1"])
+
+
+def test_get_monitors_strips_secrets(client):
+    """Security regression: the bulk monitor list must not return
+    write-capable secrets (basic-auth password, push token, custom
+    headers) — it is reachable by read-scoped API keys. The single-monitor
+    endpoint used by the editor still returns them."""
+    client.post(
+        "/api/monitors",
+        json={"id": 1, "name": "sec", "url": "http://a", "type": "push"},
+    )
+
+    async def setup():
+        from server.db import database, models
+        async with database.async_session_maker() as s:
+            res = await s.execute(select(models.Monitor).where(models.Monitor.id == 1))
+            m = res.scalar_one()
+            m.basic_auth_pass = "p4ss"
+            m.push_token = "tok"
+            m.headers_json = '{"Authorization": "Bearer xyz"}'
+            await s.commit()
+
+    asyncio.run(setup())
+
+    mon = next(m for m in client.get("/api/monitors").json() if m["id"] == 1)
+    for key in ("basic_auth_pass", "basicAuthPass", "push_token", "pushToken", "headers"):
+        assert key not in mon, f"{key} leaked in GET /monitors"
+
+    # Editor path: GET /monitor/{id} still carries what the form needs.
+    single = client.get("/api/monitor/1").json()["monitor"]
+    assert single.get("pushToken") == "tok"
+
+
+def test_setup_database_test_requires_auth_when_configured(client):
+    """Security regression: once a database is configured, the
+    connection-test endpoint (which dials an arbitrary host) must require
+    authentication — it is unauthenticated only during first-run bootstrap."""
+    client.headers.pop("Authorization", None)
+    res = client.post(
+        "/api/setup-database/test",
+        json={"type": "postgres", "host": "169.254.169.254", "port": 80,
+              "database": "x", "username": "u", "password": "p"},
+    )
+    assert res.status_code in (401, 403)
+
+
 def test_important_heartbeat_endpoints(client):
     monitor = {"id": 1, "name": "A", "url": "http://example.com", "push_token": "tok"}
     client.post("/api/monitors", json=monitor)
@@ -1593,6 +1680,36 @@ def test_status_page_heartbeat_uptime_windows_param(client):
     assert f"{monitor_id}_1y" not in uptime_list
 
 
+def test_status_page_heartbeat_beats_false_returns_uptime_only(client):
+    """beats=false skips the heartbeat payload — the public page uses it to
+    load the slow 30d/1y windows in the background — while still returning
+    the requested uptime figures."""
+    from server.db import database, models
+
+    client.post("/api/monitors", json={"id": 1, "name": "m", "url": "http://a"})
+
+    async def setup():
+        async with database.async_session_maker() as s:
+            await s.execute(
+                delete(models.Heartbeat).where(models.Heartbeat.monitor_id == 1)
+            )
+            s.add(models.Heartbeat(
+                monitor_id=1, status=1,
+                time=datetime.datetime.utcnow() - datetime.timedelta(hours=1),
+            ))
+            await s.commit()
+
+    asyncio.run(setup())
+
+    res = client.get(
+        "/api/status-page/heartbeat/test",
+        params={"beats": "false", "uptime_windows": "24"},
+    )
+    data = res.json()
+    assert data["heartbeatList"] == {}
+    assert data["uptimeList"]["1_24"] == 100.0
+
+
 def test_monitor_uptime_endpoint_per_window(client):
     """The per-monitor uptime endpoint backs the detail page's 30d / 1y
     figures. 1 up + 1 down in the last day → 50% across every window."""
@@ -2032,8 +2149,11 @@ def test_cloudflared_start_stop(monkeypatch, tmp_path):
         assert data["data"]["running"] is True
         assert data["data"]["token"] == "abc123"
 
+        # The tunnel token is a write-capable credential and must never be
+        # echoed back by the read-all settings endpoint, even though it is
+        # now stored (its presence is confirmed via the start response above).
         settings = client.get("/api/settings").json()["data"]
-        assert settings["cloudflared_token"] == "abc123"
+        assert "cloudflared_token" not in settings
 
         res = client.post("/api/reverse-proxy/cloudflared/stop", json={})
         data = res.json()
