@@ -64,7 +64,7 @@ export default {
     padding: 0 6px;
     border-radius: 4px;
     border: 1px solid var(--border);
-    background: hsl(0 0% 5%);
+    background: var(--bg);
     color: var(--text-muted);
     font-size: 11px;
     font-family: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo,

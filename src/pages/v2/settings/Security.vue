@@ -550,7 +550,7 @@ export default {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: hsl(0 0% 38%);
+    background: var(--text-faint);
 
     &.on {
         background: hsl(142 71% 45%);
@@ -558,7 +558,7 @@ export default {
     }
 
     &.off {
-        background: hsl(0 0% 38%);
+        background: var(--text-faint);
     }
 }
 
@@ -596,7 +596,7 @@ export default {
 
 .input {
     appearance: none;
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border: 1px solid var(--border);
     border-radius: 8px;
     color: var(--text);
@@ -662,7 +662,7 @@ export default {
 }
 
 .enable-flow {
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border: 1px solid hsl(217 91% 60% / 0.35);
     border-radius: 12px;
     padding: 18px;

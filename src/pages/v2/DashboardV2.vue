@@ -361,7 +361,7 @@ export default {
 }
 
 .counter {
-    --tone: hsl(0 0% 60%);
+    --tone: var(--text-muted);
     --tone-glow: hsl(0 0% 60% / 0);
 
     appearance: none;
@@ -386,7 +386,7 @@ export default {
     }
 
     &.active {
-        background: hsl(0 0% 14%);
+        background: var(--control);
         border-color: var(--tone);
         color: var(--text);
     }
@@ -395,7 +395,7 @@ export default {
     &.tone-down { --tone: hsl(0 84% 60%); --tone-glow: hsl(0 84% 60% / 0.55); }
     &.tone-pending { --tone: hsl(38 92% 50%); --tone-glow: hsl(38 92% 50% / 0.55); }
     &.tone-maintenance { --tone: hsl(217 91% 60%); --tone-glow: hsl(217 91% 60% / 0.55); }
-    &.tone-paused { --tone: hsl(0 0% 50%); --tone-glow: hsl(0 0% 50% / 0); }
+    &.tone-paused { --tone: var(--text-faint); --tone-glow: hsl(0 0% 50% / 0); }
 
     .counter-dot {
         width: 7px;
@@ -407,9 +407,11 @@ export default {
     }
 
     .counter-value {
-        color: var(--text);
+        // Tint the count in its status color (up=green, down=red, …) so the
+        // legend carries color at a glance instead of reading as plain text.
+        color: var(--tone);
         font-variant-numeric: tabular-nums;
-        font-weight: 600;
+        font-weight: 700;
         letter-spacing: 0;
     }
 
@@ -512,7 +514,7 @@ export default {
         padding: 6px 12px 6px 10px;
         background: hsl(142 71% 45% / 0.12);
         border: 1px solid hsl(142 71% 45% / 0.4);
-        color: hsl(142 71% 70%);
+        color: var(--accent);
         border-radius: 8px;
         font-size: 11px;
         text-transform: uppercase;
@@ -525,7 +527,7 @@ export default {
         &:hover {
             background: hsl(142 71% 45% / 0.22);
             border-color: hsl(142 71% 45% / 0.7);
-            color: hsl(142 71% 80%);
+            color: var(--accent);
             transform: translateY(-1px);
         }
 

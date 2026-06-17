@@ -314,6 +314,10 @@ def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
 
     app.state.trust_proxy_enabled = False
+    # Whether search engines may index this instance. Absent setting →
+    # discouraged (matches the General settings UI default), so HTML
+    # responses carry X-Robots-Tag: noindex until explicitly allowed.
+    app.state.search_engine_index_enabled = False
     app.state.cloudflared = CloudflaredManager()
     app.state.needs_db_setup = False
     # Expose for the setup-database endpoint to call after a successful
@@ -344,6 +348,18 @@ def create_app() -> FastAPI:
                 app.state.trust_proxy_enabled = enabled
             else:
                 app.state.trust_proxy_enabled = False
+
+            # searchEngineIndex flag — drives the X-Robots-Tag: noindex
+            # header on served HTML. Absent → discouraged.
+            res = await session.execute(
+                select(models.Setting).where(
+                    models.Setting.key == "searchEngineIndex"
+                )
+            )
+            sei = res.scalar_one_or_none()
+            app.state.search_engine_index_enabled = (
+                api.coerce_to_bool(sei.value) if sei is not None else False
+            )
 
             # cloudflared token
             res = await session.execute(
@@ -456,6 +472,19 @@ def create_app() -> FastAPI:
                         status_code=e.status_code, content={"detail": e.detail}
                     )
         return await call_next(request)
+
+    @app.middleware("http")
+    async def noindex_middleware(request: Request, call_next):
+        """When search-engine indexing is discouraged, tag every served HTML
+        document with `X-Robots-Tag: noindex`. The dashboard and the public
+        status pages are the same client-rendered SPA shell, so a response
+        header is the reliable signal — crawlers honor it without having to
+        execute the SPA, unlike a client-injected <meta> tag."""
+        response = await call_next(request)
+        if not getattr(request.app.state, "search_engine_index_enabled", False):
+            if response.headers.get("content-type", "").startswith("text/html"):
+                response.headers["X-Robots-Tag"] = "noindex"
+        return response
 
     app.add_middleware(
         ConditionalProxyHeadersMiddleware,

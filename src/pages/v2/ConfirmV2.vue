@@ -203,7 +203,7 @@ export default {
 }
 
 .confirm-dialog {
-    background: hsl(0 0% 7%);
+    background: var(--bg-soft);
     border: 1px solid var(--border-strong);
     border-radius: 14px;
     padding: 24px;

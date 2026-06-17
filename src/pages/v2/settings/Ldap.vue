@@ -194,7 +194,7 @@ export default {
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: hsl(0 0% 38%);
+        background: var(--text-faint);
         flex: none;
     }
 
@@ -231,7 +231,7 @@ export default {
 
     &.tone-off {
         .info-dot {
-            background: hsl(0 0% 38%);
+            background: var(--text-faint);
         }
     }
 }

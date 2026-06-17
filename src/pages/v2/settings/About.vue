@@ -321,7 +321,7 @@ export default {
     justify-content: space-between;
     gap: 16px;
     padding: 12px 14px;
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border: 1px solid var(--border);
     border-radius: 10px;
 
@@ -368,7 +368,7 @@ export default {
         position: relative;
         width: 38px;
         height: 22px;
-        background: hsl(0 0% 14%);
+        background: var(--control);
         border: 1px solid var(--border);
         border-radius: 999px;
         transition: background 160ms ease, border-color 160ms ease;
@@ -421,7 +421,7 @@ export default {
     align-items: center;
     gap: 14px;
     padding: 12px 14px;
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border: 1px solid var(--border);
     border-radius: 10px;
     text-decoration: none;

@@ -25,8 +25,8 @@
                         :aria-checked="settings.trustProxy ? 'true' : 'false'"
                         @click="toggleTrustProxy"
                     >
-                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
                         <span class="toggle-label">{{ settings.trustProxy ? "trusted" : "ignored" }}</span>
+                        <span class="toggle-track"><span class="toggle-thumb"></span></span>
                     </button>
                 </div>
                 <span v-if="settingsError" class="form-error">{{ settingsError }}</span>
@@ -431,7 +431,7 @@ export default {
             Monaco, Consolas, monospace;
         font-size: 10.5px;
         padding: 1px 5px;
-        background: hsl(0 0% 6%);
+        background: var(--bg-soft);
         border: 1px solid var(--border);
         border-radius: 4px;
         color: var(--text-muted);
@@ -456,7 +456,7 @@ export default {
         position: relative;
         width: 38px;
         height: 22px;
-        background: hsl(0 0% 14%);
+        background: var(--control);
         border: 1px solid var(--border);
         border-radius: 999px;
         transition: background 160ms ease, border-color 160ms ease;
@@ -494,7 +494,7 @@ export default {
 
 .input {
     appearance: none;
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border: 1px solid var(--border);
     border-radius: 8px;
     color: var(--text);
@@ -542,13 +542,13 @@ export default {
     letter-spacing: 0.1em;
     font-weight: 600;
     border: 1px solid var(--border);
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
 
     .status-pill-dot {
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: hsl(0 0% 38%);
+        background: var(--text-faint);
     }
 
     &.tone-on {
@@ -605,7 +605,7 @@ export default {
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: hsl(0 0% 38%);
+        background: var(--text-faint);
         margin-top: 6px;
         flex: none;
     }
@@ -635,7 +635,7 @@ export default {
                 Monaco, Consolas, monospace;
             font-size: 11px;
             padding: 1px 5px;
-            background: hsl(0 0% 6%);
+            background: var(--bg-soft);
             border: 1px solid var(--border);
             border-radius: 4px;
             color: var(--text);
@@ -648,7 +648,7 @@ export default {
             Monaco, Consolas, monospace;
         font-size: 11.5px;
         color: var(--text);
-        background: hsl(0 0% 4%);
+        background: var(--bg);
         border: 1px solid var(--border);
         border-radius: 6px;
         padding: 8px 10px;

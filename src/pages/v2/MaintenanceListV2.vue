@@ -450,14 +450,14 @@ export default {
     text-transform: uppercase;
     letter-spacing: 0.1em;
     border: 1px solid var(--border);
-    background: hsl(0 0% 14%);
+    background: var(--control);
     color: var(--text-faint);
 
     .state-dot {
         width: 7px;
         height: 7px;
         border-radius: 50%;
-        background: hsl(0 0% 38%);
+        background: var(--text-faint);
     }
 
     &.tone-active {
@@ -501,7 +501,7 @@ export default {
     color: var(--text-faint);
     padding: 2px 7px;
     border-radius: 4px;
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border: 1px solid var(--border);
 }
 

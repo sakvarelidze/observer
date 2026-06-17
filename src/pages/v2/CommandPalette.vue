@@ -485,7 +485,7 @@ export default {
     position: relative;
     width: 100%;
     max-width: 640px;
-    background: hsl(0 0% 7%);
+    background: var(--bg-soft);
     border: 1px solid var(--border-strong);
     border-radius: 14px;
     box-shadow:
@@ -626,14 +626,14 @@ export default {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: hsl(0 0% 50%);
+    background: var(--text-faint);
 
     &.pip-up { background: hsl(142 71% 45%); }
     &.pip-down { background: hsl(0 84% 60%); }
     &.pip-pending { background: hsl(38 92% 50%); }
     &.pip-maintenance { background: hsl(217 91% 60%); }
-    &.pip-paused { background: hsl(0 0% 38%); }
-    &.pip-unknown { background: hsl(0 0% 38%); }
+    &.pip-paused { background: var(--text-faint); }
+    &.pip-unknown { background: var(--text-faint); }
 }
 
 .palette-item-body {
@@ -688,7 +688,7 @@ export default {
     gap: 14px;
     padding: 10px 14px;
     border-top: 1px solid var(--border);
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     color: var(--text-faint);
     font-size: 11px;
     text-transform: uppercase;

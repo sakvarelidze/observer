@@ -28,7 +28,7 @@ export default {
 
     span {
         display: block;
-        background: var(--border-strong, hsl(0 0% 26%));
+        background: var(--border-strong);
         border-radius: 3px;
         animation: v2-loader-bar 1.4s ease-in-out infinite;
     }

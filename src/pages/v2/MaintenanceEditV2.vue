@@ -1064,7 +1064,7 @@ export default {
 
 .input {
     appearance: none;
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border: 1px solid var(--border);
     border-radius: 8px;
     color: var(--text);
@@ -1104,7 +1104,7 @@ export default {
     align-items: center;
     justify-content: space-between;
     padding: 10px 12px;
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border: 1px solid var(--border);
     border-radius: 8px;
 
@@ -1125,7 +1125,7 @@ export default {
         position: relative;
         width: 38px;
         height: 22px;
-        background: hsl(0 0% 14%);
+        background: var(--control);
         border: 1px solid var(--border);
         border-radius: 999px;
         transition: background 160ms ease, border-color 160ms ease;
@@ -1163,7 +1163,7 @@ export default {
 .strategy-card {
     appearance: none;
     text-align: left;
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 10px 12px;
@@ -1207,7 +1207,7 @@ export default {
 
 .day-pill {
     appearance: none;
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border: 1px solid var(--border);
     border-radius: 8px;
     color: var(--text-muted);
@@ -1249,7 +1249,7 @@ export default {
         appearance: none;
         width: 16px;
         height: 16px;
-        background: hsl(0 0% 6%);
+        background: var(--bg-soft);
         border: 1px solid var(--border-strong);
         border-radius: 4px;
         cursor: pointer;
@@ -1267,7 +1267,7 @@ export default {
                 top: 1px;
                 width: 5px;
                 height: 9px;
-                border: solid hsl(0 0% 6%);
+                border: solid var(--bg-soft);
                 border-width: 0 2px 2px 0;
                 transform: rotate(45deg);
             }
@@ -1296,7 +1296,7 @@ export default {
         width: 7px;
         height: 7px;
         border-radius: 50%;
-        background: hsl(0 0% 38%);
+        background: var(--text-faint);
 
         &.tone-up { background: hsl(142 71% 45%); }
         &.tone-down { background: hsl(0 84% 60%); }

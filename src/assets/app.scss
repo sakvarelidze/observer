@@ -1,6 +1,56 @@
 @use "vars" as *;
 @use "localization";
 
+// -----------------------------------------------------------------
+// Theme tokens. Defined globally on :root (cascading to every
+// component, including teleported overlays) so a single data-theme
+// attribute on <html> — set by the theme mixin — switches the whole
+// app. Dark is the default; [data-theme="light"] overrides it.
+//
+// These were previously hardcoded (dark only) in the per-component
+// `v2-surface-tokens` SCSS mixin, which is why the light/auto theme
+// options had no visual effect. Components read var(--bg) etc. and now
+// follow whichever theme is active.
+// -----------------------------------------------------------------
+:root,
+:root[data-theme="dark"] {
+    --bg: hsl(0 0% 5%);
+    --bg-soft: hsl(0 0% 8%);
+    --bg-hover: hsl(0 0% 12%);
+    --border: hsl(0 0% 16%);
+    --border-strong: hsl(0 0% 26%);
+    --text: hsl(0 0% 96%);
+    --text-muted: hsl(0 0% 62%);
+    --text-faint: hsl(0 0% 42%);
+    --accent: hsl(142 71% 45%);
+    // Control surfaces (toggle tracks, segmented controls, empty-state
+    // fills) — a notch above bg-hover; needs its own light value so it
+    // stays visible against a near-white page.
+    --control: hsl(0 0% 14%);
+    // Sticky-topbar fade (frosted gradient that lets content scroll under
+    // it) and decorative page-shell glow — both must follow the theme so
+    // they don't render as a dark veil over a light page.
+    --topbar-fade: hsl(0 0% 5% / 0.82);
+    --shell-tint: hsl(0 0% 12% / 0.7);
+}
+
+:root[data-theme="light"] {
+    --bg: hsl(0 0% 95%);
+    --bg-soft: hsl(0 0% 100%);
+    --bg-hover: hsl(0 0% 91%);
+    // Stronger than a naive invert so white cards read clearly against the
+    // page and edges stay visible.
+    --border: hsl(0 0% 80%);
+    --border-strong: hsl(0 0% 64%);
+    --text: hsl(0 0% 12%);
+    --text-muted: hsl(0 0% 34%);
+    --text-faint: hsl(0 0% 46%);
+    --accent: hsl(142 71% 36%);
+    --control: hsl(0 0% 84%);
+    --topbar-fade: hsl(0 0% 95% / 0.9);
+    --shell-tint: hsl(0 0% 50% / 0.05);
+}
+
 // Global background — every v2 page sets its own background, but the
 // html/body fallback prevents flashes of unstyled white during initial
 // load, route transitions, and overscroll. The earlier theme system
@@ -9,7 +59,7 @@
 // didn't fully cover. Pinning html/body to the v2 surface tone here
 // avoids that.
 html {
-    background-color: #0a0a0a;
+    background-color: var(--bg);
 
     // Hide the main page scrollbar — content still scrolls, but the
     // gutter on the right is gone. Inner scrollable elements (events
@@ -23,8 +73,8 @@ html {
 }
 
 body {
-    background-color: #0a0a0a;
-    color: #f5f5f5;
+    background-color: var(--bg);
+    color: var(--text);
     margin: 0;
     padding: 0;
     min-height: 100vh;

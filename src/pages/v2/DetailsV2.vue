@@ -649,7 +649,7 @@ export default {
 
     background:
         radial-gradient(circle at 0% 0%, var(--status-glow), transparent 55%),
-        radial-gradient(circle at 100% -10%, hsl(0 0% 12% / 0.7), transparent 65%),
+        radial-gradient(circle at 100% -10%, var(--shell-tint), transparent 65%),
         var(--bg);
     padding: 0 32px 48px;
     transition: background 240ms ease;
@@ -908,7 +908,7 @@ export default {
     }
 
     &.accent {
-        border-color: hsl(0 0% 22%);
+        border-color: var(--border-strong);
     }
 
     .stat-value {
@@ -1005,7 +1005,7 @@ export default {
 }
 
 .event-card {
-    --event-color: hsl(0 0% 50%);
+    --event-color: var(--text-faint);
 
     flex: none;
     min-width: 140px;
@@ -1087,8 +1087,8 @@ export default {
     align-items: center;
     justify-content: center;
     gap: 20px;
-    background: hsl(0 0% 5%);
-    color: hsl(0 0% 60%);
+    background: var(--bg);
+    color: var(--text-muted);
 }
 
 /*

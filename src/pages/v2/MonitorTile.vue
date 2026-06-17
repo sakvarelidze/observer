@@ -170,11 +170,15 @@ export default {
     flex-direction: column;
     gap: 6px;
     padding: 10px 12px 8px;
-    background: hsl(0 0% 9%);
-    border: 1px solid hsl(0 0% 16%);
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
     border-radius: 10px;
+    // Status-colored left accent so the whole wall reads as a status board
+    // at a glance (up=green, down=red, pending=amber, …) instead of a grid
+    // of identical white cards.
+    box-shadow: inset 3px 0 0 0 var(--status);
     text-decoration: none;
-    color: hsl(0 0% 92%);
+    color: var(--text);
     overflow: hidden;
     transition: transform 180ms $v2-ease,
         border-color 180ms ease, background 180ms ease, box-shadow 220ms ease;
@@ -182,14 +186,9 @@ export default {
 
     &:hover {
         transform: translateY(-2px);
-        border-color: hsl(0 0% 24%);
-        background: hsl(0 0% 11%);
-        box-shadow: 0 8px 24px hsl(0 0% 0% / 0.4);
-    }
-
-    // Tile-specific tweaks layered on top of the shared status tokens.
-    &.status-down {
-        border-color: hsl(0 60% 30%);
+        border-color: var(--border-strong);
+        background: var(--bg-hover);
+        box-shadow: inset 3px 0 0 0 var(--status), 0 8px 24px hsl(0 0% 0% / 0.18);
     }
 
     &.paused,
@@ -215,13 +214,13 @@ export default {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        color: hsl(0 0% 96%);
+        color: var(--text);
     }
 
     .tile-ping {
         font-variant-numeric: tabular-nums;
         font-size: 11px;
-        color: hsl(0 0% 62%);
+        color: var(--text-muted);
         font-feature-settings: "tnum";
     }
 }
@@ -230,7 +229,7 @@ export default {
     justify-content: space-between;
     font-size: 10.5px;
     font-variant-numeric: tabular-nums;
-    color: hsl(0 0% 50%);
+    color: var(--text-faint);
     text-transform: uppercase;
     letter-spacing: 0.04em;
 
@@ -315,7 +314,7 @@ export default {
     }
     100% {
         transform: translateY(0);
-        border-color: hsl(0 0% 16%);
+        border-color: var(--border);
     }
 }
 

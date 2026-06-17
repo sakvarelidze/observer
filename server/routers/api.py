@@ -2098,6 +2098,8 @@ async def set_settings(
 
         if key == "trustProxy":
             request.app.state.trust_proxy_enabled = coerce_to_bool(raw_value)
+        if key == "searchEngineIndex":
+            request.app.state.search_engine_index_enabled = coerce_to_bool(raw_value)
 
     await session.commit()
     return {"ok": True}

@@ -435,7 +435,7 @@ export default {
 
     background:
         radial-gradient(circle at 0% -20%, var(--status-glow), transparent 60%),
-        radial-gradient(circle at 100% -10%, hsl(0 0% 12% / 0.5), transparent 60%),
+        radial-gradient(circle at 100% -10%, var(--shell-tint), transparent 60%),
         var(--bg);
     padding: 0 24px 64px;
     min-height: 100vh;
@@ -544,14 +544,14 @@ export default {
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: hsl(0 0% 38%);
+    background: var(--text-faint);
     transform: translateY(-50%);
 
     &.operational { background: hsl(142 71% 45%); box-shadow: 0 0 0 8px hsl(142 71% 45% / 0.18); }
     &.degraded { background: hsl(38 92% 55%); box-shadow: 0 0 0 8px hsl(38 92% 50% / 0.18); }
     &.outage { background: hsl(0 84% 60%); box-shadow: 0 0 0 8px hsl(0 84% 60% / 0.2); animation: pulse-outage 1.6s ease-in-out infinite; }
     &.maintenance { background: hsl(217 91% 60%); box-shadow: 0 0 0 8px hsl(217 91% 60% / 0.18); }
-    &.unknown { background: hsl(0 0% 38%); }
+    &.unknown { background: var(--text-faint); }
 }
 
 @keyframes pulse-outage {
@@ -718,7 +718,7 @@ export default {
         width: 7px;
         height: 7px;
         border-radius: 50%;
-        background: hsl(0 0% 38%);
+        background: var(--text-faint);
     }
 
     &.operational {
@@ -753,7 +753,7 @@ export default {
 }
 
 .monitor-row {
-    --row-color: hsl(0 0% 38%);
+    --row-color: var(--text-faint);
     padding: 14px 20px;
     display: flex;
     flex-direction: column;
@@ -809,7 +809,7 @@ export default {
     align-items: baseline;
     gap: 4px;
     padding: 3px 8px;
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border: 1px solid var(--border);
     border-radius: 999px;
     font-size: 11.5px;
@@ -841,7 +841,7 @@ export default {
     background: hsl(142 71% 45%);
     transition: opacity 140ms ease;
 
-    &.empty { background: hsl(0 0% 14%); }
+    &.empty { background: var(--control); }
     &.down { background: hsl(0 84% 60%); }
     &.pending { background: hsl(38 92% 55%); }
     &.maintenance { background: hsl(217 91% 60%); }

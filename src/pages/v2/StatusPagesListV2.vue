@@ -298,7 +298,7 @@ export default {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: hsl(0 0% 14%);
+    background: var(--control);
     border-radius: 10px;
     color: var(--text);
     font-size: 14px;
@@ -346,7 +346,7 @@ export default {
     text-transform: uppercase;
     letter-spacing: 0.1em;
     border: 1px solid var(--border);
-    background: hsl(0 0% 14%);
+    background: var(--control);
     color: var(--text-faint);
 
     &.public {

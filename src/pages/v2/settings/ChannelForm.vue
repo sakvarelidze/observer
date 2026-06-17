@@ -245,7 +245,7 @@ export default {
         position: relative;
         width: 38px;
         height: 22px;
-        background: hsl(0 0% 14%);
+        background: var(--control);
         border: 1px solid var(--border);
         border-radius: 999px;
         transition: background 160ms ease, border-color 160ms ease;
@@ -290,7 +290,7 @@ export default {
     gap: 8px;
     padding: 10px 14px;
     border-top: 1px solid var(--border);
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border-radius: 0 0 10px 10px;
 
     .form-error {

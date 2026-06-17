@@ -492,7 +492,7 @@ export default {
         font-size: 10px;
         padding: 1px 5px;
         border-radius: 999px;
-        background: hsl(0 0% 4%);
+        background: var(--bg);
         color: var(--text-faint);
     }
 }
@@ -501,7 +501,7 @@ export default {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: hsl(0 0% 38%);
+    background: var(--text-faint);
 
     &.tone-up { background: hsl(142 71% 45%); }
     &.tone-down { background: hsl(0 84% 60%); }
@@ -584,7 +584,7 @@ export default {
     width: 9px;
     height: 9px;
     border-radius: 50%;
-    background: hsl(0 0% 38%);
+    background: var(--text-faint);
     box-shadow: 0 0 0 4px hsl(0 0% 0% / 0);
     flex: none;
 
@@ -619,7 +619,7 @@ export default {
     text-transform: uppercase;
     letter-spacing: 0.1em;
     border-radius: 999px;
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border: 1px solid var(--border);
     color: var(--text-faint);
 
