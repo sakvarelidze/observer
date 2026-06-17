@@ -46,7 +46,7 @@ export default {
 }
 
 .color-swatch {
-    --swatch: hsl(0 0% 50%);
+    --swatch: var(--text-faint);
 
     appearance: none;
     width: 26px;

@@ -15,16 +15,12 @@ $v2-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 // Surface tokens. Apply on the page root so descendants can read
 // var(--bg), var(--text), etc. without duplicating values.
 // -----------------------------------------------------------------
+// The surface/text/accent tokens are now defined globally on :root (see
+// app.scss) so a single [data-theme] on <html> switches the whole app.
+// They must NOT be re-declared on each component root here — doing so
+// would override the global theme for that subtree and pin it to dark.
+// Only the non-themed motion token remains.
 @mixin v2-surface-tokens {
-    --bg: hsl(0 0% 5%);
-    --bg-soft: hsl(0 0% 8%);
-    --bg-hover: hsl(0 0% 12%);
-    --border: hsl(0 0% 16%);
-    --border-strong: hsl(0 0% 26%);
-    --text: hsl(0 0% 96%);
-    --text-muted: hsl(0 0% 62%);
-    --text-faint: hsl(0 0% 42%);
-    --accent: hsl(142 71% 45%);
     --enter-ease: #{$v2-ease};
 }
 
@@ -102,7 +98,7 @@ $v2-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
     // ambient glow of the page beneath instead of cutting it off with a
     // hard solid edge. The mask feathers the bottom so the blur itself
     // also fades out, avoiding a visible blur boundary.
-    background: linear-gradient(to bottom, hsl(0 0% 5% / 0.82), hsl(0 0% 5% / 0));
+    background: linear-gradient(to bottom, var(--topbar-fade), transparent);
     backdrop-filter: blur(14px) saturate(120%);
     -webkit-backdrop-filter: blur(14px) saturate(120%);
     mask-image: linear-gradient(to bottom, black 78%, transparent);

@@ -269,7 +269,7 @@ export default {
 }
 
 .badge-preview {
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 18px;
@@ -311,7 +311,7 @@ export default {
 .snippet-input {
     appearance: none;
     flex: 1;
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 8px 10px;

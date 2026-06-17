@@ -1268,7 +1268,7 @@ export default {
         position: relative;
         width: 38px;
         height: 22px;
-        background: hsl(0 0% 14%);
+        background: var(--control);
         border: 1px solid var(--border);
         border-radius: 999px;
         transition: background 160ms ease, border-color 160ms ease;
@@ -1419,7 +1419,7 @@ export default {
         border-radius: 50%;
         margin-top: 5px;
         flex: none;
-        background: hsl(0 0% 40%);
+        background: var(--text-faint);
 
         &.tone-up { background: hsl(142 71% 45%); }
         &.tone-down { background: hsl(0 84% 60%); }
@@ -1613,7 +1613,7 @@ export default {
     }
 
     &.active {
-        background: hsl(0 0% 14%);
+        background: var(--control);
         border-color: var(--border-strong);
         color: var(--text);
     }
@@ -1681,7 +1681,7 @@ export default {
 }
 
 .color-swatch {
-    --swatch: hsl(0 0% 50%);
+    --swatch: var(--text-faint);
     appearance: none;
     width: 26px;
     height: 26px;
@@ -1709,7 +1709,7 @@ export default {
 }
 
 .tag-chip {
-    --tag-color: hsl(0 0% 38%);
+    --tag-color: var(--text-faint);
 
     appearance: none;
     display: inline-flex;
@@ -1789,7 +1789,7 @@ export default {
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: hsl(0 0% 28%);
+        background: var(--border-strong);
         transition: background 140ms ease;
     }
 
@@ -1801,7 +1801,7 @@ export default {
         letter-spacing: 0.1em;
         padding: 2px 5px;
         border-radius: 4px;
-        background: hsl(0 0% 14%);
+        background: var(--control);
         border: 1px solid var(--border);
     }
 }

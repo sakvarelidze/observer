@@ -20,6 +20,20 @@ export default {
         if (!this.styleElapsedTime) {
             this.styleElapsedTime = "no-line";
         }
+
+        // Keep `system` in sync with the OS preference so "auto" reacts
+        // live instead of being frozen at page-load time.
+        const mq = window.matchMedia("(prefers-color-scheme: dark)");
+        const onSystemChange = (e) => {
+            this.system = e.matches ? "dark" : "light";
+        };
+        if (mq.addEventListener) {
+            mq.addEventListener("change", onSystemChange);
+        } else if (mq.addListener) {
+            mq.addListener(onSystemChange);
+        }
+
+        this.applyTheme();
         this.updateThemeColorMeta();
     },
 
@@ -70,6 +84,7 @@ export default {
         },
 
         theme() {
+            this.applyTheme();
             this.updateThemeColorMeta();
         },
 
@@ -84,6 +99,17 @@ export default {
     },
 
     methods: {
+        /**
+         * Reflect the resolved theme onto the document root so the themed
+         * CSS custom properties (defined in app.scss under
+         * :root[data-theme="..."]) take effect across the whole app,
+         * including teleported overlays (modals, toasts, command palette).
+         * @returns {void}
+         */
+        applyTheme() {
+            document.documentElement.setAttribute("data-theme", this.theme);
+        },
+
         /**
          * Update the theme color meta tag
          * @returns {void}

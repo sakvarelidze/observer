@@ -541,7 +541,7 @@ export default {
     align-items: center;
     justify-content: center;
     font-size: 14px;
-    background: hsl(0 0% 14%);
+    background: var(--control);
     color: var(--text-muted);
 
     &.tone-purple { background: hsl(265 78% 60% / 0.16); color: hsl(265 78% 75%); }
@@ -588,7 +588,7 @@ export default {
     }
 
     &.muted {
-        background: hsl(0 0% 14%);
+        background: var(--control);
         color: var(--text-faint);
     }
 }
@@ -625,7 +625,7 @@ export default {
         position: relative;
         width: 28px;
         height: 16px;
-        background: hsl(0 0% 14%);
+        background: var(--control);
         border: 1px solid var(--border);
         border-radius: 999px;
         transition: background 160ms ease, border-color 160ms ease;
@@ -774,7 +774,7 @@ export default {
     position: fixed;
     bottom: 24px;
     right: 24px;
-    background: hsl(0 0% 7%);
+    background: var(--bg-soft);
     border: 1px solid var(--border-strong);
     border-radius: 10px;
     padding: 12px 16px;

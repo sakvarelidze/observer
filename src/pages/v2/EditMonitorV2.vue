@@ -496,7 +496,7 @@ function safeParseJson(raw) {
 
     background:
         radial-gradient(circle at 0% 0%, var(--status-glow), transparent 55%),
-        radial-gradient(circle at 100% -10%, hsl(0 0% 12% / 0.7), transparent 65%),
+        radial-gradient(circle at 100% -10%, var(--shell-tint), transparent 65%),
         var(--bg);
     padding: 0 32px 64px;
     transition: background 240ms ease;
@@ -728,8 +728,8 @@ function safeParseJson(raw) {
     align-items: center;
     justify-content: center;
     gap: 20px;
-    background: hsl(0 0% 5%);
-    color: hsl(0 0% 60%);
+    background: var(--bg);
+    color: var(--text-muted);
 }
 
 @media (prefers-reduced-motion: reduce) {

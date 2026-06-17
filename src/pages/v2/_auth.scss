@@ -78,7 +78,7 @@
 
 @mixin v2-auth-input {
     appearance: none;
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border: 1px solid var(--border);
     border-radius: 8px;
     color: var(--text);
@@ -143,7 +143,7 @@
     appearance: none;
     width: 16px;
     height: 16px;
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border: 1px solid var(--border-strong);
     border-radius: 4px;
     cursor: pointer;
@@ -161,7 +161,7 @@
             top: 1px;
             width: 5px;
             height: 9px;
-            border: solid hsl(0 0% 6%);
+            border: solid var(--bg-soft);
             border-width: 0 2px 2px 0;
             transform: rotate(45deg);
         }

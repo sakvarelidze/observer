@@ -35,7 +35,7 @@
             <div class="field row-toggle">
                 <div class="toggle-text">
                     <span class="field-label">search engine indexing</span>
-                    <span class="field-help">when off, status pages and the dashboard add a noindex meta tag.</span>
+                    <span class="field-help">when discouraged, the dashboard and status pages send a noindex directive so search engines skip them.</span>
                 </div>
                 <button
                     type="button"
@@ -45,8 +45,8 @@
                     :aria-checked="settings.searchEngineIndex ? 'true' : 'false'"
                     @click="settings.searchEngineIndex = !settings.searchEngineIndex"
                 >
-                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
                     <span class="toggle-label">{{ settings.searchEngineIndex ? "allowed" : "discouraged" }}</span>
+                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
                 </button>
             </div>
 
@@ -116,8 +116,8 @@
                     :aria-checked="settings.nscd ? 'true' : 'false'"
                     @click="settings.nscd = !settings.nscd"
                 >
-                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
                     <span class="toggle-label">{{ settings.nscd ? "enabled" : "disabled" }}</span>
+                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
                 </button>
             </div>
 
@@ -358,7 +358,7 @@ export default {
         position: relative;
         width: 38px;
         height: 22px;
-        background: hsl(0 0% 14%);
+        background: var(--control);
         border: 1px solid var(--border);
         border-radius: 999px;
         transition: background 160ms ease, border-color 160ms ease;

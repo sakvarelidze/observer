@@ -288,7 +288,7 @@ export default {
     line-height: 1.5;
 
     code {
-        background: hsl(0 0% 6%);
+        background: var(--bg-soft);
         padding: 1px 5px;
         border-radius: 4px;
         font-size: 11px;
@@ -308,7 +308,7 @@ fieldset.field {
 }
 
 .engine-card {
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 12px 14px;

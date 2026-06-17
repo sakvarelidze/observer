@@ -272,7 +272,7 @@ export default {
         letter-spacing: 0.12em;
         padding: 1px 5px;
         border-radius: 3px;
-        background: hsl(0 0% 14%);
+        background: var(--control);
         border: 1px solid var(--border);
     }
 }

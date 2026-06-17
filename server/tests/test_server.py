@@ -749,6 +749,42 @@ def test_ldap_settings(client):
     assert data["ldapDNTemplate"] == "uid={username},ou=users,dc=example,dc=com"
 
 
+def test_search_engine_indexing_noindex_header(tmp_path, monkeypatch):
+    """The 'search engine indexing' toggle drives an X-Robots-Tag: noindex
+    header on served HTML. Default (unset) is discouraged → header present;
+    flipping it to allowed removes the header; JSON/API responses are never
+    tagged."""
+    from fastapi.responses import HTMLResponse
+
+    db_path = tmp_path / "sei.db"
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{db_path.as_posix()}")
+
+    app = create_app()
+
+    @app.get("/__html_probe__")
+    async def _html_probe():
+        return HTMLResponse("<html><head></head><body></body></html>")
+
+    with TestClient(app) as c:
+        token = c.post(
+            "/api/setup", json={"username": "admin", "password": "admin"}
+        ).json()["token"]
+        c.headers.update({"Authorization": f"Bearer {token}"})
+
+        # Default: no setting saved → discouraged → HTML carries noindex,
+        # but JSON responses do not.
+        assert c.get("/__html_probe__").headers.get("X-Robots-Tag") == "noindex"
+        assert "X-Robots-Tag" not in c.get("/api/settings").headers
+
+        # Allowed → header gone.
+        c.post("/api/settings", json={"settings": {"searchEngineIndex": True}})
+        assert "X-Robots-Tag" not in c.get("/__html_probe__").headers
+
+        # Discouraged again → header returns.
+        c.post("/api/settings", json={"settings": {"searchEngineIndex": False}})
+        assert c.get("/__html_probe__").headers.get("X-Robots-Tag") == "noindex"
+
+
 def test_status_page_crud(client):
     # create
     res = client.post("/api/status-page", json={"title": "Main", "slug": "abc"})

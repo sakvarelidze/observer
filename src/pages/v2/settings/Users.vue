@@ -432,7 +432,7 @@ export default {
     gap: 8px;
     padding: 10px 14px;
     border-top: 1px solid var(--border);
-    background: hsl(0 0% 5%);
+    background: var(--bg);
     border-radius: 0 0 10px 10px;
 
     .form-error {
@@ -490,7 +490,7 @@ export default {
 
 .input {
     appearance: none;
-    background: hsl(0 0% 6%);
+    background: var(--bg-soft);
     border: 1px solid var(--border);
     border-radius: 8px;
     color: var(--text);
@@ -557,7 +557,7 @@ export default {
     justify-content: center;
     font-size: 14px;
     font-weight: 600;
-    background: hsl(0 0% 14%);
+    background: var(--control);
     color: var(--text);
     text-transform: uppercase;
 }
@@ -598,7 +598,7 @@ export default {
     }
 
     &.muted {
-        background: hsl(0 0% 14%);
+        background: var(--control);
         color: var(--text-faint);
     }
 
@@ -639,7 +639,7 @@ export default {
         position: relative;
         width: 28px;
         height: 16px;
-        background: hsl(0 0% 14%);
+        background: var(--control);
         border: 1px solid var(--border);
         border-radius: 999px;
         transition: background 160ms ease, border-color 160ms ease;

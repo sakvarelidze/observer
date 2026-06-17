@@ -81,7 +81,7 @@ export default {
 
     li {
         padding: 6px 12px;
-        background: hsl(0 0% 6%);
+        background: var(--bg-soft);
         border: 1px solid var(--border);
         border-radius: 6px;
     }
@@ -114,7 +114,7 @@ export default {
     transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
 
     &:hover {
-        background: hsl(0 0% 14%);
+        background: var(--control);
         color: var(--text);
         border-color: var(--border-strong);
     }

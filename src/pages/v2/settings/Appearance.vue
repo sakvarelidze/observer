@@ -227,7 +227,7 @@ export default {
         align-items: center;
         justify-content: center;
         border-radius: 10px;
-        background: hsl(0 0% 14%);
+        background: var(--control);
         color: var(--text);
         font-size: 14px;
         flex: none;
@@ -243,7 +243,7 @@ export default {
         }
 
         &.tone-auto {
-            background: hsl(0 0% 18%);
+            background: var(--border);
             color: var(--text-muted);
         }
     }
